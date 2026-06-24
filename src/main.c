@@ -20,6 +20,8 @@ int main(int argc, char *argv[]){
 	array_t *lex = arr_init(1);
 	assert(lex && "lex failed alloc");
 	for (unsigned int i = 1; argv[i]; i++){
+		if (*argv[i] == '-')
+			continue;
 		FILE * f = fopen(argv[i], "r");
 		if (!f){
 			fprintf(stderr, "Failed to open %s\n", argv[i]);
@@ -30,19 +32,15 @@ int main(int argc, char *argv[]){
 		while(1){
 			if (getline(&lineptr, &linesiz, f) == -1)
 				break;
+			if (!linesiz)
+				break;
 			lexer(&lex, lineptr);
 			free(lineptr);
 			lineptr = NULL;
-			print_toks(lex);
-			arr_free(lex, free_token);
-			lex = arr_init(1);
-			assert(lex && "lex failed alloc");
-			if (!linesiz)
-				break;
-			linesiz = 0;
 		}
 		free(lineptr);
 		fclose(f);
 	}
-	arr_free(lex, free);
+	print_toks(lex);
+	arr_free(lex, free_token);
 }

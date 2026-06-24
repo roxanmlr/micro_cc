@@ -102,10 +102,9 @@ int print_toks(array_t *lex){
 		return -1;
 	int w = 0;
 	int tabs = 0;
+	(void)tabs;
 	for (unsigned int i = 0; i < lex->len; i++){
 		token_t *tok = (lex->data)[i];
-		for(u_int16_t t = 0; t < tabs; t++)
-			printf("\t");
 		switch (tok->name){
 			case TOK_IDENTIFIER:
 				w += printf("[IDENTIFIER:%s]", tok->value);break;
