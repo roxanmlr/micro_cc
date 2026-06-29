@@ -1,7 +1,7 @@
 #include "../array/array.h"
 #include <sys/types.h>
 
-enum token_name{
+enum token_name {
 	TOK_IDENTIFIER = 1,
 	TOK_CONSTANT,
 	TOK_KW = 10,
@@ -16,7 +16,7 @@ enum token_name{
 	TOK_SEM_COLON
 };
 
-struct token{
+struct token {
 	enum token_name name;
 	char *value;
 	size_t line;
@@ -31,6 +31,6 @@ Returns:
 	on error : -1, allocation failed or bad syntax
 	on success : number of token appended 
 */
-ssize_t lexer(array_t **lex, char *src);
+ssize_t lexer(array_t ** lex, char *src);
 
-int print_toks(array_t *lex);
+int print_toks(array_t * lex);
