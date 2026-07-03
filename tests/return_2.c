@@ -1,3 +1,5 @@
+/*jdjdjdjd*/
+#define TWO 2
 int main(void){
-	return 2;
+	return TWO;
 }
