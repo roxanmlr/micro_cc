@@ -15,7 +15,6 @@ static void sys_exit(char *func, int exit_code){
 	exit(exit_code);
 }
 
-
 void free_token(void *a){
 	if (!a)
 		return;
@@ -80,6 +79,13 @@ int main(int argc, char *argv[]){
 		fclose(f);
 		waitpid(pid, NULL, 0);
 	}
-	print_toks(lex);
+/*	print_toks(lex);*/
+	if (!lex)
+		return EXIT_FAILURE;
+	struct program_node * ast = parse(lex);
 	arr_free(lex, free_token);
+	if (!ast)
+		return EXIT_FAILURE;
+	print_ast(ast);
+	free_ast(ast);
 }

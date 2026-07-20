@@ -1,3 +1,5 @@
+#ifndef LEXER_H
+#define LEXER_H
 #include "../array/array.h"
 #include <sys/types.h>
 
@@ -34,3 +36,6 @@ Returns:
 ssize_t lexer(array_t ** lex, char *src);
 
 int print_toks(array_t * lex);
+
+const char * lex_token_name(enum token_name token_name);
+#endif
