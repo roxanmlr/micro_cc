@@ -57,6 +57,7 @@ void print_func_node(struct func_node *func_node, int level){
 }
 void print_ast(struct program_node *ast){
 	fprintf(stderr, "(Build-Unit\n");
-	print_func_node(ast->node, 1);
+	for (size_t i = 0; i < ast->len; i++)
+		print_func_node((ast->nodes)[i], 1);
 	fprintf(stderr, ")\n");
 }

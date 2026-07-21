@@ -16,7 +16,9 @@ struct func_node {
 	struct stmt_node *node;
 };
 struct program_node {
-	struct func_node *node;
+	struct func_node **nodes;
+	size_t len;
+	size_t cap;
 };
 
 /*lex is an array_t of token_t pointers */

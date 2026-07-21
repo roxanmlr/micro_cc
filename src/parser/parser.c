@@ -31,17 +31,16 @@ static void free_func_node(struct func_node *func_node){
 void free_ast(struct program_node *prg){
 	if (!prg)
 		return ;
-	free_func_node(prg->node);
+	for (size_t i = 0; i < prg->len; i++)
+		free_func_node(prg->nodes[i]);
+	free(prg->nodes);
 	free(prg);
 }
 
-/*static void info_not_supported(char *prefix_msg){
-	fprintf(stderr, "%s not supported\n", prefix_msg);
-}*/
 
 #define EXPECTED_A_TOKEN_GOT_NONE 1
 #define EXPECTED_A_TOKEN_GOT_ANOTHER 2
-static enum token_name other_token = 0;
+//static enum token_name other_token = 0;
 static void info_try_consume(int err, enum token_name expected, enum token_name got){
 	if (!err)
 		return ;
@@ -51,8 +50,8 @@ static void info_try_consume(int err, enum token_name expected, enum token_name 
 		fprintf(stderr, "Expected a %s got %s\n", lex_token_name(expected), lex_token_name(got));
 }
 
-static token_t * try_consume(array_t *lex, size_t pos, enum token_name tok_name, int *err){
-	if (!lex || lex->len == 0){
+static token_t * try_consume(array_t *lex, size_t pos, enum token_name tok_name, int *err, enum token_name *other_token){
+	if (!lex || !other_token || lex->len <= pos){
 		if (err)
 			*err = EXPECTED_A_TOKEN_GOT_NONE;
 		return NULL;
@@ -66,7 +65,7 @@ static token_t * try_consume(array_t *lex, size_t pos, enum token_name tok_name,
 	if (token->name != tok_name){
 		if (err)
 			*err = EXPECTED_A_TOKEN_GOT_ANOTHER;
-		other_token = token->name;
+		*other_token = token->name;
 		return NULL;
 	}
 	/*fprintf(stderr, "Consumed %s\n", lex_token_name(tok_name));*/
@@ -87,12 +86,14 @@ static struct exp_node *parse_exp_node(array_t *lex,  size_t *end_pos){
 	size_t pos = *end_pos;
 	int err = 0;
 	enum token_name tok_expected = TOK_CONSTANT;
-	token_t *token = try_consume(lex, pos, tok_expected, &err);
+	enum token_name other_token = 0;
+	token_t *token = try_consume(lex, pos, tok_expected, &err, &other_token);
 	if (!token)
-		goto clean;
+		goto error;
 	exp_node->constant = atoi(token->value);
 	return exp_node;
-clean:
+error:
+	info_try_consume(err, tok_expected, other_token);
 	free_exp_node(exp_node);
 	return NULL;
 }
@@ -107,7 +108,8 @@ static struct ret_node *parse_ret_node(array_t *lex,  size_t *end_pos){
 	size_t pos = *end_pos;
 	int err = 0;
 	enum token_name tok_expected = TOK_KW_RETURN;
-	if (!try_consume(lex, pos, tok_expected, &err))
+	enum token_name other_token = 0;
+	if (!try_consume(lex, pos, tok_expected, &err, &other_token))
 		goto error;
 	pos++;
 	ret_node->node = parse_exp_node(lex, &pos);
@@ -116,7 +118,7 @@ static struct ret_node *parse_ret_node(array_t *lex,  size_t *end_pos){
 		goto clean;
 	}
 	tok_expected = TOK_SEM_COLON;
-	if(!try_consume(lex, ++pos, tok_expected, &err))
+	if(!try_consume(lex, ++pos, tok_expected, &err, &other_token))
 		goto error;
 	*end_pos = ++pos;
 	return ret_node;
@@ -159,11 +161,12 @@ static struct func_node * parse_func_node(array_t *lex,  size_t *end_pos){
 	int err = 0;
 	size_t pos = *end_pos;
 	enum token_name tok_expected = TOK_KW_INT;
-	if (!try_consume(lex, pos, tok_expected, &err))
+	enum token_name other_token = 0;
+	if (!try_consume(lex, pos, tok_expected, &err, &other_token))
 		goto error;
 	/*Check it */
 	tok_expected = TOK_IDENTIFIER;
-	token_t * token = try_consume(lex, ++pos, tok_expected, &err);
+	token_t * token = try_consume(lex, ++pos, tok_expected, &err, &other_token);
 	if (!token)
 		goto error;
 	func_node->name = strdup(token->value);
@@ -172,28 +175,28 @@ static struct func_node * parse_func_node(array_t *lex,  size_t *end_pos){
 		goto clean;
 	}
 	tok_expected = TOK_PAREN_LEFT;
-	if (!try_consume(lex, ++pos, tok_expected, &err))
+	if (!try_consume(lex, ++pos, tok_expected, &err, &other_token))
 		goto error;
 	tok_expected = TOK_KW_VOID;
-	if (!try_consume(lex, ++pos, tok_expected, &err))
+	if (!try_consume(lex, ++pos, tok_expected, &err, &other_token))
 		goto error;
 	tok_expected = TOK_PAREN_RIGHT;
-	if (!try_consume(lex, ++pos, tok_expected, &err))
+	if (!try_consume(lex, ++pos, tok_expected, &err, &other_token))
 		goto error;
 	tok_expected = TOK_BRACE_LEFT;
-	if (!try_consume(lex, ++pos, tok_expected, &err))
+	if (!try_consume(lex, ++pos, tok_expected, &err, &other_token))
 		goto error;
 	pos++;
 	func_node->node = parse_stmt_node(lex, &pos);
 	if (!func_node->node)
 		goto error;
 	tok_expected = TOK_BRACE_RIGHT;
-	if (!try_consume(lex, pos, tok_expected, &err))
+	if (!try_consume(lex, pos, tok_expected, &err, &other_token))
 		goto error;
 	*end_pos = ++pos;
 	return func_node;
 error:
-	info_try_consume(err, tok_expected, ((token_t *)(lex->data[0]))->name);
+	info_try_consume(err, tok_expected, other_token);
 clean:
 	free_func_node(func_node);
 	return NULL;
@@ -207,15 +210,29 @@ struct program_node *parse(array_t *lex){
 		return NULL;
 	struct program_node *prg_node = calloc(1, sizeof(struct program_node));
 	if (!prg_node){
-		perror("malloc");
+		perror("calloc");
 		return NULL;
 	}
-/*	if (lex->len != 1)
-		return info_not_supported("\"Multiple functions on file\""), free_ast(prg_node), NULL;*/
 	size_t end_pos = 0;
-	prg_node->node = parse_func_node(lex, &end_pos);
-	if (!prg_node->node)
-		return free_ast(prg_node), NULL;
-	(void) end_pos;
+	prg_node->cap = 32;
+	prg_node->nodes = (struct func_node **) calloc(prg_node->cap, sizeof(struct func_node *));
+	if (!prg_node->nodes){
+		perror("calloc");
+		free(prg_node);
+		return NULL;
+	}
+	while(end_pos < lex->len){
+		(prg_node->nodes)[prg_node->len] = parse_func_node(lex, &end_pos);
+		if (!(prg_node->nodes)[prg_node->len])
+			return free_ast(prg_node), NULL;
+		(prg_node->len)++;
+		if (prg_node->len == prg_node->cap){
+			prg_node->cap *= 2;
+			struct func_node ** func_nodes = (struct func_node **) calloc(prg_node->cap, sizeof(struct func_node *));
+			memmove(func_nodes, prg_node->nodes, (prg_node->cap / 2) * sizeof(struct func_node *));
+			free(prg_node->nodes);
+			prg_node->nodes = func_nodes;
+		}
+	}
 	return prg_node;
 }
