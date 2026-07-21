@@ -2,6 +2,7 @@
 #define MICRO_CC_H
 #include "lexer/lexer.h"
 #include "parser/parser.h"
+#include "asm_gen/asm_gen.h"
 
 typedef unsigned char byte;
 

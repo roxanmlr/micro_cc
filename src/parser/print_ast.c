@@ -1,13 +1,7 @@
 #include "parser.h"
 #include <stdio.h>
 #include <unistd.h>
-
-static inline void putnchar(char c, int n){
-	char p[n+1];
-	memset(p, c, n);
-	p[n] = 0;
-	write(STDERR_FILENO,p, n);
-}
+#include "../utils/utils.h"
 
 void print_exp_node(struct exp_node *exp_node){
 	if (!exp_node){
@@ -34,18 +28,18 @@ void print_stmt_node(struct stmt_node *stmt_node, int level){
 }
 
 void print_func_node(struct func_node *func_node, int level){
-	putnchar('\t', level);
+	put_n_char('\t', level, STDERR_FILENO);
 	if (!func_node){
 		fprintf(stderr, "NULL FUNCTION NODE");
 		return;
 	}
 	fprintf(stderr, "(Function\n");
-	putnchar('\t', level + 1);
+	put_n_char('\t', level + 1, STDERR_FILENO);
 	fprintf(stderr, "name=\"%s\",\n", func_node->name);
-	putnchar('\t', level + 1);
+	put_n_char('\t', level + 1, STDERR_FILENO);
 	fprintf(stderr, "body=");
 	print_stmt_node(func_node->node, level+1);
-	putnchar('\t', level);
+	put_n_char('\t', level, STDERR_FILENO);
 	fprintf(stderr, ")\n");
 }
 void print_ast(struct program_node *ast){

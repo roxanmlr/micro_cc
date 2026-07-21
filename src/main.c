@@ -86,6 +86,12 @@ int main(int argc, char *argv[]){
 	arr_free(lex, free_token);
 	if (!ast)
 		return EXIT_FAILURE;
-	print_ast(ast);
+	/*print_ast(ast);*/
+	asm_gen_t * _asm = asm_gen(ast);
 	free_ast(ast);
+	if (!_asm)
+		return EXIT_FAILURE;
+	print_asm_gen(_asm, stdout);
+	free_asm_gen(_asm);
+	return EXIT_SUCCESS;
 }
